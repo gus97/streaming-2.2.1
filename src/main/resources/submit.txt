@@ -1,0 +1,8 @@
+/bin/spark-submit \
+--name gus009 \
+--class cn.gus.java.PI \
+--master spark://172.18.111.3:7078 \
+--executor-memory 1G \
+--total-executor-cores 10 \
+t1.jar \
+"$@"

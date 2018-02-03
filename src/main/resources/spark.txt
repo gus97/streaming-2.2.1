@@ -1,0 +1,115 @@
+2、批处理、交互式处理，流处理
+批处理：追求吞吐量
+交互式处理：类sql、快速数据分析 5秒～1分钟
+流式处理：实时性最强 0～5秒
+spark做到了大一统
+
+
+impala presto 交互式计算框架
+
+强调一点 spark只是一个计算框架
+
+spark取代mapreduce
+
+RDD：弹性分布式数据集
+数据存在于多个机器节点，可以存在于内存和磁盘中的只读数据
+RDD逻辑上存在于多个parttion中，partition物理分布在多个节点的内存和磁盘中
+
+Transformation 数据的转换 rdd-->rdd 惰性执行，直到遇到一个action
+Action rdd-->单机的值/非rdd数据结构 save/dispaly
+
+spark程序架构
+Driver：
+Executor：
+
+spark的并发度：
+1、默认block数量决定partition
+hdfs fsck 文件目录 -files -blocks -locations
+2、NLineInputFormat 按行设置并发度
+3、HBase中由region数量决定partition
+
+新生成的rdd有继承关系，由上一个rdd的partition决定
+
+broadcast对于每一个executor下的所有task共享一份！！！
+cache 对于非内存数据，多次使用的情况下，考虑cache，惰性加载的缘故！
+
+action的并发执行调优
+
+job stage task 关系
+一个action操作对应一个job
+有些stage被跳过，是因为之前已经计算过
+-----
+
+Driver端做了那些事
+生成逻辑执行计划
+生成物理查询计划
+任务调度
+
+spark内部原理
+1、通过rdd，创建DAG（逻辑计划）
+2、为DAG生成物理查询计划
+3、调度并执行task
+4、分布式执行task
+
+逻辑计划主要是确定各个RDD之间的依赖关系，由transformation操作决定
+1、完全依赖  数据全部依赖
+2、部分依赖  依赖之前的每一个RDD中的部分数据 M*R shuffle
+join congroup *bykey repartition
+
+生成物理执行图：划分stage
+由shuffle作为分界线，shuffle之前一个，shuffle之后一个
+
+spark的核心计算--shuffle
+spark的shuffle是完全抄袭hadoop，也是完全落盘的操作
+那么它的优势实际上在 DAG 线程池 cache几个方面
+
+关于flume的一个额外讨论，数据想办法直接进入kafka，不要再次落地，主流不推荐这么做
+
+主流的工作流调度器：
+airflow 开源轻量简单
+oozie  hadoop生态圈中一员，难用
+
+
+spark程序调优
+1、filter操作导致大量小任务，sql级别不能优化的问题
+coalesce(默认不shuffle)   性能高，不均匀
+repartition(默认shuffle)  性能低，很均匀
+
+2、降低单条记录开销
+例如通过partition批量提交
+mapPartitions
+rdd.mapPartiotions{records=>
+    conn = getDBConn
+    for(x<- redcords) write(x)
+    conn.close
+}
+
+3、处理数据倾斜
+选择合理的partition key
+把某个特别多的key，或者所有key切分，通过分割方式切分，最后在回归合并
+spark.speculation = true 推测执行
+动态发现执行越来越慢的节点，将其排除在集群之外
+
+4、操作符的优化
+能用reducebykey替换groupbykey的尽量替换
+
+5、作业参数调优
+
+cache并不意味着数据就一定在内存
+原始数据进入内存之后会发生膨胀，原始数据转换成对象，发生数据置换
+会翻数倍之多，存不下的数据就和磁盘一样慢
+可以将数据压缩或者改变成列式存储，也可同时进行
+
+
+
+
+
+
+
+
+
+
+
+
+
+

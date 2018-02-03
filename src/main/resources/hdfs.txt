@@ -1,0 +1,1 @@
+hdfs dfs -put -f /Users/guxichang/IdeaProjects/streaming-2.2.1/target/spark2.2.1-1.0-SNAPSHOT.jar  hdfs://172.18.111.3:9000/gjx/ss.jar
